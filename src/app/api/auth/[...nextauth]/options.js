@@ -8,7 +8,7 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_JWT_SECRET,
   session: {
     jwt: true,
   },
@@ -35,43 +35,49 @@ export const authOptions = {
 
         return {
           id: user._id,
+          email: user.email,
         };
       },
     }),
     GitHubProvider({
-      clientId: process.env.GITHUB_ID ?? "",
+      clientId: process.env.GITHUB_CLIENT_ID ?? "",
       clientSecret: process.env.GITHUB_SECRET ?? "",
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-      authorization: {},
     }),
   ],
   callbacks: {
     // Enhanced jwt callback
     jwt: async ({ token, user, account }) => {
+      // Enhanced jwt callback
       if (account && account.provider !== "credentials") {
+        await connectDB();
         const appAccount = await Account.findOne({
           provider: account.provider,
           accountId: account.providerAccountId,
         });
 
-        console.log(appAccount, "appAccount");
+        const dbUser = await User.findById(appAccount.userId).select("email");
 
         if (appAccount) {
           token.id = appAccount.userId;
+          token.email = dbUser.email;
         }
       } else if (user) {
         token.id = user.id;
+        token.email = user.email;
+        // Add more fields as necessary
       }
       return token;
     },
     session: async ({ session, token }) => {
-      session.id = token.id;
+      session.user.id = token.id;
+      session.user.email = token.email;
+      // Add additional fields to the session as necessary
       return session;
     },
+
     signIn: async ({ user, account, profile }) => {
+      console.log("signIn");
+      await connectDB();
       if (account.provider === "credentials") return true;
 
       const sess = await getServerSession(authOptions);
@@ -79,12 +85,13 @@ export const authOptions = {
         return false;
       } else {
         const uid = sess.user.id;
-        const account = await Account.findOne({
+
+        const dbaccount = await Account.findOne({
           uid: uid,
           provider: account.provider,
         });
 
-        if (!account) {
+        if (!dbaccount) {
           const newAccount = new Account({
             userId: uid,
             provider: account.provider,

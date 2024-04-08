@@ -1,5 +1,6 @@
 import MainWrapper from "@/components/Wrappers/Client/MainWrapper";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata = {
   title: "Create Next App",
@@ -9,10 +10,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="">
         <MainWrapper>
           <nav></nav>
           <main>{children}</main>
+          <Toaster />
           <footer></footer>
         </MainWrapper>
       </body>

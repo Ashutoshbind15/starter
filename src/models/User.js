@@ -11,6 +11,7 @@ const UserSchema = mongoose.Schema({
     },
   ],
   email: String,
+  stripe_customer_id: String,
 });
 
 const User = mongoose?.models?.User || mongoose.model("User", UserSchema);
