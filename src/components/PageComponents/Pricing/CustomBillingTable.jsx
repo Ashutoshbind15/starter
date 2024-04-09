@@ -38,8 +38,14 @@ const fetchPopulatedProducts = async () => {
       );
 
       return {
-        yearlyPrice,
-        monthlyPrice,
+        yearlyPrice: {
+          unit_amount: yearlyPrice.unit_amount,
+          lookup_key: yearlyPrice.lookup_key,
+        },
+        monthlyPrice: {
+          unit_amount: monthlyPrice.unit_amount,
+          lookup_key: monthlyPrice.lookup_key,
+        },
         name: product.name,
         description: product.description,
         features: product.features,
