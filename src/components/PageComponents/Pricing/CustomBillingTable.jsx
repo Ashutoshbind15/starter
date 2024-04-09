@@ -26,30 +26,33 @@ const fetchPopulatedProducts = async () => {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   let products = await stripe.products.list();
 
-  // Use Promise.all to wait for all promises resolved from the map
   const populatedProducts = await Promise.all(
     products.data.map(async (product) => {
       const prices = await stripe.prices.list({ product: product.id });
-      const yearlyPrice = prices.data.find(
-        (price) => price.recurring.interval === "year"
+      const yp = prices.data.find(
+        (price) => price.recurring && price.recurring.interval === "year"
       );
-      const monthlyPrice = prices.data.find(
-        (price) => price.recurring.interval === "month"
+      const mp = prices.data.find(
+        (price) => price.recurring && price.recurring.interval === "month"
       );
 
       return {
-        yearlyPrice: {
-          unit_amount: yearlyPrice.unit_amount,
-          lookup_key: yearlyPrice.lookup_key,
-        },
-        monthlyPrice: {
-          unit_amount: monthlyPrice.unit_amount,
-          lookup_key: monthlyPrice.lookup_key,
-        },
         name: product.name,
         description: product.description,
-        features: product.features,
+        features: product.features, // Ensure product.features is an array.
         id: product.id,
+        yearlyPrice: yp
+          ? {
+              lookup_key: yp.lookup_key,
+              unit_amount: yp.unit_amount,
+            }
+          : null,
+        monthlyPrice: mp
+          ? {
+              lookup_key: mp.lookup_key,
+              unit_amount: mp.unit_amount,
+            }
+          : null,
       };
     })
   );
@@ -59,6 +62,7 @@ const fetchPopulatedProducts = async () => {
 
 const CustomBillingTable = async ({ subscriptionInfo }) => {
   const products = await fetchPopulatedProducts();
+  console.log(products);
 
   return (
     <div className="flex items-center justify-center my-16 flex-wrap w-full">
